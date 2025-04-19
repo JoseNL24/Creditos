@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container my-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-lg mb-4 fade-in">
+                <div class="card-header bg-primary text-white">
+                    <h2 class="mb-0">
+                        <i class="fas fa-chart-pie me-2"></i> Visualización de Créditos
+                    </h2>
+                </div>
+                <div class="card-body">
+                    <ul class="nav nav-tabs mb-4" id="graficasTab" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="total-tab" data-bs-toggle="tab" data-bs-target="#total" type="button" role="tab" aria-controls="total" aria-selected="true">
+                                <i class="fas fa-chart-bar me-1"></i> Total por Cliente
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="distribucion-tab" data-bs-toggle="tab" data-bs-target="#distribucion" type="button" role="tab" aria-controls="distribucion" aria-selected="false">
+                                <i class="fas fa-chart-pie me-1"></i> Distribución
+                            </button>
+                        </li>
+                    </ul>
+                    
+                    <div class="tab-content" id="graficasTabContent">
+                        <div class="tab-pane fade show active" id="total" role="tabpanel" aria-labelledby="total-tab">
+                            {% if plot_url %}
+                                <div class="text-center">
+                                    <img src="data:image/png;base64,{{ plot_url }}" alt="Gráfica de créditos por cliente" class="img-fluid rounded">
+                                </div>
+                            {% else %}
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle me-2"></i> No hay datos suficientes para mostrar la gráfica.
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="tab-pane fade" id="distribucion" role="tabpanel" aria-labelledby="distribucion-tab">
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-triangle me-2"></i> Esta funcionalidad está en desarrollo.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6 mb-4">
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-header bg-success text-white">
+                            <h4 class="mb-0">
+                                <i class="fas fa-calculator me-2"></i> Estadísticas
+                            </h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-6">
+                                    <div class="card bg-light mb-3">
+                                        <div class="card-body text-center">
+                                            <h6 class="card-title text-muted">Total de Créditos</h6>
+                                            <h3 class="text-primary" id="total-creditos">0</h3>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="card bg-light mb-3">
+                                        <div class="card-body text-center">
+                                            <h6 class="card-title text-muted">Monto Total</h6>
+                                            <h3 class="text-success" id="monto-total">$0.00</h3>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="card bg-light mb-3">
+                                        <div class="card-body text-center">
+                                            <h6 class="card-title text-muted">Tasa Promedio</h6>
+                                            <h3 class="text-info" id="tasa-promedio">0%</h3>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="card bg-light mb-3">
+                                        <div class="card-body text-center">
+                                            <h6 class="card-title text-muted">Plazo Promedio</h6>
+                                            <h3 class="text-warning" id="plazo-promedio">0 meses</h3>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6 mb-4">
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-header bg-info text-white">
+                            <h4 class="mb-0">
+                                <i class="fas fa-users me-2"></i> Clientes Recientes
+                            </h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="list-group" id="clientes-recientes">
+                                <div class="list-group-item text-center py-4">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Cargando...</span>
+                                    </div>
+                                    <p class="mt-2 mb-0">Cargando datos...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function formatCurrency(amount) {
+    return '$' + parseFloat(amount).toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
+}
+
+fetch('/api/creditos')
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('total-creditos').textContent = data.length;
+        
+        if (data.length > 0) {
+            const total = data.reduce((sum, credito) => sum + credito.monto, 0);
+            const tasaPromedio = data.reduce((sum, credito) => sum + credito.tasa_interes, 0) / data.length;
+            const plazoPromedio = data.reduce((sum, credito) => sum + credito.plazo, 0) / data.length;
+            
+            document.getElementById('monto-total').textContent = formatCurrency(total);
+            document.getElementById('tasa-promedio').textContent = tasaPromedio.toFixed(2) + '%';
+            document.getElementById('plazo-promedio').textContent = plazoPromedio.toFixed(0) + ' meses';
+            
+            const clientesRecientes = document.getElementById('clientes-recientes');
+            clientesRecientes.innerHTML = '';
+            
+            const clientesUnicos = [...new Set(data.map(item => item.cliente))].slice(0, 5);
+            
+            if (clientesUnicos.length === 0) {
+                clientesRecientes.innerHTML = `
+                    <div class="list-group-item">
+                        <p class="mb-0 text-muted">No hay clientes registrados</p>
+                    </div>
+                `;
+            } else {
+                clientesUnicos.forEach(cliente => {
+                    const creditosCliente = data.filter(c => c.cliente === cliente);
+                    const totalCliente = creditosCliente.reduce((sum, c) => sum + c.monto, 0);
+                    
+                    clientesRecientes.innerHTML += `
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0">${cliente}</h6>
+                                <span class="badge bg-primary rounded-pill">${creditosCliente.length}</span>
+                            </div>
+                            <small class="text-muted">Total: ${formatCurrency(totalCliente)}</small>
+                        </div>
+                    `;
+                });
+            }
+        } else {
+            document.getElementById('clientes-recientes').innerHTML = `
+                <div class="list-group-item">
+                    <p class="mb-0 text-muted">No hay datos disponibles</p>
+                </div>
+            `;
+        }
+    })
+    .catch(error => {
+        console.error('Error al obtener datos:', error);
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Lista de Créditos</h2>
+        <a href="{{ url_for('nuevo_credito') }}" class="btn btn-primary">Agregar Nuevo Crédito</a>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+    
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead class="table-dark">
+                <tr>
+                    <th>ID</th>
+                    <th>Cliente</th>
+                    <th>Monto</th>
+                    <th>Tasa de Interés</th>
+                    <th>Plazo (meses)</th>
+                    <th>Fecha de Otorgamiento</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for credito in creditos %}
+                <tr>
+                    <td>{{ credito.id }}</td>
+                    <td>{{ credito.cliente }}</td>
+                    <td>${{ "%.2f"|format(credito.monto) }}</td>
+                    <td>{{ "%.2f"|format(credito.tasa_interes) }}%</td>
+                    <td>{{ credito.plazo }}</td>
+                    <td>{{ credito.fecha_otorgamiento }}</td>
+                    <td>
+                        <a href="{{ url_for('editar_credito', id=credito.id) }}" class="btn btn-sm btn-warning">Editar</a>
+                        <form action="{{ url_for('eliminar_credito', id=credito.id) }}" method="post" class="d-inline">
+                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('¿Estás seguro de eliminar este crédito?')">Eliminar</button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" class="text-center">No hay créditos registrados</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}
